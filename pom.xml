@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>fr.an.tests</groupId>
+    <artifactId>spark-flamegraph-plugin</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+
+        <spark.version>3.5.0</spark.version>
+        <scala.binary.version>2.13</scala.binary.version>
+        <scala.version>2.13.12</scala.version>
+        <scala-maven-plugin.version>4.7.1</scala-maven-plugin.version>
+        <maven.scaladoc.skip>true</maven.scaladoc.skip>
+        <CodeCacheSize>128m</CodeCacheSize>
+    </properties>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.28</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.28</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.14</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>${scala-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>eclipse-add-source</id>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile-first</id>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>attach-scaladocs</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>doc-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <checkMultipleScalaVersions>true</checkMultipleScalaVersions>
+                    <failOnMultipleScalaVersions>true</failOnMultipleScalaVersions>
+                    <recompileMode>incremental</recompileMode>
+                    <skip>${maven.scaladoc.skip}</skip>
+                    <args>
+                        <arg>-unchecked</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                        <arg>-explaintypes</arg>
+                        <arg>-target:8</arg>
+                        <!--
+                        <arg>-Wconf:cat=deprecation:wv,any:e</arg>
+                        <arg>-Wunused:imports</arg>
+                        <arg>-Wconf:cat=scaladoc:wv</arg>
+                        <arg>-Wconf:msg=^(?=.*?method|value|type|object|trait|inheritance)(?=.*?deprecated)(?=.*?since 2.13).+$:e</arg>
+                        <arg>-Wconf:msg=^(?=.*?Widening conversion from)(?=.*?is deprecated because it loses precision).+$:e</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=Auto-application to \`\(\)\` is deprecated:e</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=Auto-application to \`\(\)\` is deprecated&amp;site=org.apache.spark.rdd.RDDSuite:s</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=Auto-application to \`\(\)\` is deprecated&amp;site=org.apache.spark.scheduler.TaskSetManagerSuite:s</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=Auto-application to \`\(\)\` is deprecated&amp;site=org.apache.spark.streaming.ReceiverInputDStreamSuite:s</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=Auto-application to \`\(\)\` is deprecated&amp;site=org.apache.spark.streaming.kafka010.KafkaRDDSuite:s</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=procedure syntax is deprecated:e</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=symbol literal is deprecated:e</arg>
+                        <arg>-Wconf:cat=deprecation&amp;msg=it will become a keyword in Scala 3:e</arg>
+                        -->
+                    </args>
+                    <jvmArgs>
+                        <jvmArg>-Xss128m</jvmArg>
+                        <jvmArg>-Xms4g</jvmArg>
+                        <jvmArg>-Xmx4g</jvmArg>
+                        <jvmArg>-XX:MaxMetaspaceSize=2g</jvmArg>
+                        <jvmArg>-XX:ReservedCodeCacheSize=${CodeCacheSize}</jvmArg>
+                    </jvmArgs>
+                    <javacArgs>
+                        <javacArg>-source</javacArg>
+                        <javacArg>${java.version}</javacArg>
+                        <javacArg>-target</javacArg>
+                        <javacArg>${java.version}</javacArg>
+                        <javacArg>-Xlint:all,-serial,-path,-try</javacArg>
+                    </javacArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <skipMain>true</skipMain>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
