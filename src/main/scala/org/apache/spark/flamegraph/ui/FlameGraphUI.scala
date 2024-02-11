@@ -5,12 +5,11 @@
 package org.apache.spark.flamegraph.ui
 
 import fr.an.spark.plugin.flamegraph.driver.FlameGraphDriverPlugin
-
 import org.apache.spark.internal.Logging
 import org.apache.spark.ui.{SparkUI, SparkUITab, UIUtils, WebUIPage}
+import org.sparkproject.jetty.servlet.{ServletContextHandler, ServletHolder}
 
 import scala.xml.Node
-
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
 /**
@@ -25,6 +24,13 @@ class FlameGraphUI(val flameGraphDriverPlugin: FlameGraphDriverPlugin, sparkUI: 
 //    val flameGraphHttpServlet = new FlameGraphHttpServlet
 //    sparkUI.attachHandler("/flameGraph", flameGraphHttpServlet, "")
     sparkUI.attachTab(new FlameGraphDriverTab(flameGraphDriverPlugin, sparkUI))
+
+
+//    val contextHandler = new ServletContextHandler
+//    contextHandler.setContextPath("/flamegraph-plugin/api")
+//    contextHandler.addServlet(new ServletHolder(loaderServlet), "/*")
+//    sparkUI.attachHandler(contextHandler)
+
   }
 
 }
@@ -50,7 +56,7 @@ class FlameGraphWebUIPage(flameGraphDriverPlugin: FlameGraphDriverPlugin,
                           parent: FlameGraphDriverTab)
   extends WebUIPage("") {
 
-  override def render(req: HttpServletRequest): Seq[Node] = {
+  override def render(request: HttpServletRequest): Seq[Node] = {
 //    scala.xml.Node scalaNode;
 //    try(val stream = FlameGraphWebUIPage.class.getResourceAsStream("FlameGraphWebUIPage.html")) {
 //      scalaNode = (scala.xml.Node) scala.xml.XML.load(stream);
@@ -61,9 +67,15 @@ class FlameGraphWebUIPage(flameGraphDriverPlugin: FlameGraphDriverPlugin,
 //    val ls = new ArrayList<>(Arrays.asList(scalaNode));
 //    return JavaConverters.asScalaBuffer(ls).toSeq();
     val content = <div>
-      <button click="onClick()">Click</button>
+      <link rel="stylesheet" type="text/css" href={UIUtils.prependBaseUri(request, "/flamegraph-plugin/static/d3-flamegraph.css")}></link>
+      <script src={UIUtils.prependBaseUri(request, "/static/d3.min.js")}></script>
+      <script src={UIUtils.prependBaseUri(request, "/flamegraph-plugin/static/d3-flamegraph.min.js")}></script>
+      <script src={UIUtils.prependBaseUri(request, "/flamegraph-plugin/static/FlameGraph.js")}></script>
+
+      <button onclick="onClickRefreshFlameGraph()">Refresh</button>
     </div>;
-    UIUtils.headerSparkPage(req, "FlameGraph", content, parent)
+    // UIUtils.basicSparkPage(request, content, "FlameGraph", true)
+    UIUtils.headerSparkPage(request, "FlameGraph", content, parent)
   }
 
 }

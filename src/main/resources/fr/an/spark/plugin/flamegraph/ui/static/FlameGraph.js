@@ -1,4 +1,4 @@
-function onClick() {
+function onClickRefreshFlameGraph() {
     console.log("onClick");
     const xhr = new XMLHttpRequest();
     xhr.open("GET", "/flameGraph/refresh");

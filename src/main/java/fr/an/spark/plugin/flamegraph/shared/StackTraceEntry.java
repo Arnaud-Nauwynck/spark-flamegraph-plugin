@@ -1,5 +1,6 @@
 package fr.an.spark.plugin.flamegraph.shared;
 
+import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
 import lombok.RequiredArgsConstructor;
 
 import java.util.HashMap;
@@ -28,6 +29,10 @@ public class StackTraceEntry {
 
     /*pp*/ void _registerChild(StackTraceEntry child) {
         childMap.put(child.stackTraceElementKey, child);
+    }
+
+    public StackTraceEntryDTO toDTO() {
+        return new StackTraceEntryDTO(id, (parent!=null)? parent.id : 0, stackTraceElementKey);
     }
 
 }

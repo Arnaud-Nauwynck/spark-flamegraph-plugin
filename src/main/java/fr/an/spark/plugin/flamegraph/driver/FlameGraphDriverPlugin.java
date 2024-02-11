@@ -1,5 +1,7 @@
 package fr.an.spark.plugin.flamegraph.driver;
 
+import fr.an.spark.plugin.flamegraph.driver.rest.FlameGraphDriverPluginFromServletContext;
+import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
 import fr.an.spark.plugin.flamegraph.shared.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -8,9 +10,18 @@ import org.apache.spark.api.plugin.DriverPlugin;
 import org.apache.spark.api.plugin.PluginContext;
 import org.apache.spark.flamegraph.ui.FlameGraphUI;
 import org.apache.spark.ui.SparkUI;
+import org.apache.spark.util.Utils;
+import org.glassfish.jersey.server.ServerProperties;
+import org.glassfish.jersey.servlet.ServletContainer;
+import org.sparkproject.jetty.servlet.DefaultServlet;
+import org.sparkproject.jetty.servlet.ServletContextHandler;
+import org.sparkproject.jetty.servlet.ServletHolder;
+import scala.Some;
 
 import javax.annotation.concurrent.GuardedBy;
+import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,6 +30,8 @@ import java.util.Map;
  */
 @Slf4j
 public class FlameGraphDriverPlugin implements DriverPlugin {
+
+    private static final String FLAMEGRAPH_PLUGIN_STATIC_RESOURCE_DIR = "fr/an/spark/plugin/flamegraph/ui/static";
 
     private final Object lock = new Object();
 
@@ -39,10 +52,45 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
         Map<String,String> executorInitValues = new HashMap<>();
         log.info("FlameGraph plugin init");
 
-        SparkUI ui = sc.ui().getOrElse(() -> (SparkUI)null);
-        new FlameGraphUI(this, ui);
+        SparkUI ui = sc.ui().getOrElse(null);
+        if (ui != null) {
+            new FlameGraphUI(this, ui);
+
+            ui.attachHandler(createServletContextHandler());
+            //?? ui.addStaticHandler(FLAMEGRAPH_PLUGIN_STATIC_RESOURCE_DIR, "/flamegraph-plugin/static");
+            val cl = FlameGraphDriverPlugin.class.getClassLoader();
+            ui.attachHandler(createStaticHandler(cl, FLAMEGRAPH_PLUGIN_STATIC_RESOURCE_DIR, "/flamegraph-plugin/static"));
+        }
 
         return executorInitValues;
+    }
+
+    protected ServletContextHandler createServletContextHandler() {
+        val servletContextHolder = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+        servletContextHolder.setContextPath("/flamegraph-plugin/api");
+        FlameGraphDriverPluginFromServletContext.set(servletContextHolder, this);
+
+        val holder = new ServletHolder(ServletContainer.class);
+        holder.setInitParameter(ServerProperties.PROVIDER_PACKAGES, "org.apache.spark.flamegraph.driver.rest");
+        servletContextHolder.addServlet(holder, "/*");
+        return servletContextHolder;
+    }
+
+    protected static ServletContextHandler createStaticHandler(ClassLoader cl, String resourceBase, String path) {
+        val contextHandler = new ServletContextHandler();
+        contextHandler.setInitParameter("org.eclipse.jetty.servlet.Default.gzip", "false");
+        val staticHandler = new DefaultServlet();
+        val holder = new ServletHolder(staticHandler);
+
+        URL resourceBaseURL = cl.getResource(resourceBase);
+        if (resourceBaseURL != null) {
+            holder.setInitParameter("resourceBase", resourceBaseURL.toString());
+        } else {
+            throw new RuntimeException("Could not find resource path for Web UI: " + resourceBase);
+        }
+        contextHandler.setContextPath(path);
+        contextHandler.addServlet(holder, "/");
+        return contextHandler;
     }
 
     @Override
@@ -85,4 +133,9 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
         return res;
     }
 
+    public List<StackTraceEntryDTO> listStackRegistryEntries() {
+        synchronized (lock) {
+            return stackTraceEntryRegistry.listStackRegistryEntries();
+        }
+    }
 }

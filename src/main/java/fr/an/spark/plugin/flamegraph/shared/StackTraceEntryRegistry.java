@@ -1,5 +1,6 @@
 package fr.an.spark.plugin.flamegraph.shared;
 
+import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
 import fr.an.spark.plugin.flamegraph.shared.ResolveStackTracesRequest.ResolveStackTraceRequest;
 import fr.an.spark.plugin.flamegraph.shared.ResolveStackTracesResponse.ResolveStackTraceResponse;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import lombok.val;
 import java.lang.management.ThreadInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -28,6 +30,11 @@ public class StackTraceEntryRegistry {
     }
 
     //---------------------------------------------------------------------------------------------
+
+
+    public List<StackTraceEntryDTO> listStackRegistryEntries() {
+        return LsUtils.map(byId.values(), StackTraceEntry::toDTO);
+    }
 
     public StackTraceEntry findById(int id) {
         return byId.get(id);
