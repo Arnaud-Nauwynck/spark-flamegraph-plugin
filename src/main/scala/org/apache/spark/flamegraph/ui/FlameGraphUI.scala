@@ -73,6 +73,20 @@ class FlameGraphWebUIPage(flameGraphDriverPlugin: FlameGraphDriverPlugin,
       <script src={UIUtils.prependBaseUri(request, "/flamegraph-plugin/static/FlameGraph.js")}></script>
 
       <button onclick="onClickRefreshFlameGraph()">Refresh</button>
+      <button onclick="onClickDummyFlameGraph()">Dummy</button>
+
+      <div>
+        <div>
+          <span id="flamegraph-header1" style="cursor: pointer;">
+            <h4>
+              <span id="flamegraph-arrow" class="arrow-open"></span>
+              <a>Flame Graph</a>
+            </h4>
+          </span>
+        </div>
+        <div id="flamegraph-chart1">
+        </div>
+      </div>
     </div>;
     // UIUtils.basicSparkPage(request, content, "FlameGraph", true)
     UIUtils.headerSparkPage(request, "FlameGraph", content, parent)

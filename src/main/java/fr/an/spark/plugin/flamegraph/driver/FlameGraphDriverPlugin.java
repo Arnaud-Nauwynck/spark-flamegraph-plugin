@@ -1,6 +1,8 @@
 package fr.an.spark.plugin.flamegraph.driver;
 
 import fr.an.spark.plugin.flamegraph.driver.rest.FlameGraphDriverPluginFromServletContext;
+import fr.an.spark.plugin.flamegraph.driver.rest.FlameGraphRestResource;
+import fr.an.spark.plugin.flamegraph.driver.rest.dto.FlameGraphNodeDTO;
 import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
 import fr.an.spark.plugin.flamegraph.shared.*;
 import lombok.extern.slf4j.Slf4j;
@@ -10,13 +12,11 @@ import org.apache.spark.api.plugin.DriverPlugin;
 import org.apache.spark.api.plugin.PluginContext;
 import org.apache.spark.flamegraph.ui.FlameGraphUI;
 import org.apache.spark.ui.SparkUI;
-import org.apache.spark.util.Utils;
 import org.glassfish.jersey.server.ServerProperties;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.sparkproject.jetty.servlet.DefaultServlet;
 import org.sparkproject.jetty.servlet.ServletContextHandler;
 import org.sparkproject.jetty.servlet.ServletHolder;
-import scala.Some;
 
 import javax.annotation.concurrent.GuardedBy;
 import java.net.URL;
@@ -34,6 +34,8 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
     private static final String FLAMEGRAPH_PLUGIN_STATIC_RESOURCE_DIR = "fr/an/spark/plugin/flamegraph/ui/static";
 
     private final Object lock = new Object();
+
+    private boolean verbose = false;
 
     @GuardedBy("lock")
     private final StackTraceEntryRegistry stackTraceEntryRegistry = new StackTraceEntryRegistry();
@@ -56,22 +58,29 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
         if (ui != null) {
             new FlameGraphUI(this, ui);
 
-            ui.attachHandler(createServletContextHandler());
-            //?? ui.addStaticHandler(FLAMEGRAPH_PLUGIN_STATIC_RESOURCE_DIR, "/flamegraph-plugin/static");
             val cl = FlameGraphDriverPlugin.class.getClassLoader();
+
+            // attach Rest handler for "/flamegraph-plugin/api/*"
+            ui.attachHandler(createServletContextHandler(cl, "/flamegraph-plugin/api"));
+
+            // attach static resources handler for "/flamegraph-plugin/static/*"
             ui.attachHandler(createStaticHandler(cl, FLAMEGRAPH_PLUGIN_STATIC_RESOURCE_DIR, "/flamegraph-plugin/static"));
         }
 
         return executorInitValues;
     }
 
-    protected ServletContextHandler createServletContextHandler() {
+    protected ServletContextHandler createServletContextHandler(ClassLoader cl, String path) {
         val servletContextHolder = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        servletContextHolder.setContextPath("/flamegraph-plugin/api");
+        servletContextHolder.setContextPath(path);
+        servletContextHolder.setClassLoader(cl);
         FlameGraphDriverPluginFromServletContext.set(servletContextHolder, this);
 
         val holder = new ServletHolder(ServletContainer.class);
-        holder.setInitParameter(ServerProperties.PROVIDER_PACKAGES, "org.apache.spark.flamegraph.driver.rest");
+        holder.setInitParameter(ServerProperties.PROVIDER_PACKAGES,
+                FlameGraphRestResource.class //
+                        .getName().replace(".FlameGraphRestResource", "") // idem .getPackageName(), in java 8
+                );
         servletContextHolder.addServlet(holder, "/*");
         return servletContextHolder;
     }
@@ -114,10 +123,12 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
             for(val toResolve: req.toResolve) {
                 totalRemainElementCount += toResolve.remainElements.length;
             }
-            log.info("FlameGraph driver receive ResolveStackTracesRequest[" + resolveStackTracesRequestCount + "]: "
-                    + "toResolveCount:" + req.toResolve.size()
-                    + " total remainElementCount:" + totalRemainElementCount
-            );
+            if (verbose) {
+                log.info("FlameGraph driver receive ResolveStackTracesRequest[" + resolveStackTracesRequestCount + "]: "
+                        + "toResolveCount:" + req.toResolve.size()
+                        + " total remainElementCount:" + totalRemainElementCount
+                );
+            }
             ResolveStackTracesResponse resp;
             synchronized (lock) {
                 resp = stackTraceEntryRegistry.handleResolveStackTracesRequest(req);
@@ -138,4 +149,22 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
             return stackTraceEntryRegistry.listStackRegistryEntries();
         }
     }
+
+    public FlameGraphNodeDTO currFlameGraphDTO() {
+        FlameGraphNodeDTO root = new FlameGraphNodeDTO("root", 100);
+
+        FlameGraphNodeDTO f1 = new FlameGraphNodeDTO("f1", 40);
+        root.addChild(f1);
+
+        FlameGraphNodeDTO g1 = new FlameGraphNodeDTO("g1", 39);
+        f1.addChild(g1);
+
+        FlameGraphNodeDTO h1 = new FlameGraphNodeDTO("h1", 38);
+        g1.addChild(h1);
+
+        root.addChild(new FlameGraphNodeDTO("f2", 30));
+
+        return root;
+    }
+
 }
