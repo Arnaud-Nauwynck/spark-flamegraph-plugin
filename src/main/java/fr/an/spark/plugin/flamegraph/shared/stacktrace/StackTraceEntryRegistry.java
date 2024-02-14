@@ -1,8 +1,11 @@
-package fr.an.spark.plugin.flamegraph.shared;
+package fr.an.spark.plugin.flamegraph.shared.stacktrace;
 
 import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
-import fr.an.spark.plugin.flamegraph.shared.ResolveStackTracesRequest.ResolveStackTraceRequest;
-import fr.an.spark.plugin.flamegraph.shared.ResolveStackTracesResponse.ResolveStackTraceResponse;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesRequest;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesRequest.ResolveStackTraceRequest;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesResponse;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesResponse.ResolveStackTraceResponse;
+import fr.an.spark.plugin.flamegraph.shared.utils.LsUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,5 +1,6 @@
 package fr.an.spark.plugin.flamegraph.shared;
 
+import fr.an.spark.plugin.flamegraph.shared.utils.ThreadNameUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

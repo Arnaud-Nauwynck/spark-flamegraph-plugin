@@ -1,9 +1,15 @@
 package fr.an.spark.plugin.flamegraph.executor;
 
 import fr.an.spark.plugin.flamegraph.shared.*;
-import fr.an.spark.plugin.flamegraph.shared.FlameGraphAccumulator.FlameGraphThreadGroupAccumulator;
-import fr.an.spark.plugin.flamegraph.shared.ResolveStackTracesRequest.ResolveStackTraceRequest;
-import fr.an.spark.plugin.flamegraph.shared.StackTraceEntryRegistry.PartiallyResolvedStackTrace;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesRequest;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesRequest.ResolveStackTraceRequest;
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntry;
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntryRegistry;
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntryRegistry.PartiallyResolvedStackTrace;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesResponse;
+import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeRequest;
+import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeResponse;
+import fr.an.spark.plugin.flamegraph.shared.utils.ThreadNameUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +43,7 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
     protected final StackTraceEntryRegistry stackTraceEntryRegistry = new StackTraceEntryRegistry();
 
     @Getter
-    protected FlameGraphAccumulator flameGraphAccumulator = new FlameGraphAccumulator(stackTraceEntryRegistry.getRootEntry());
+    protected FlameGraphThreadGroupsChangeAccumulator flameGraphThreadGroupsChangeAccumulator = new FlameGraphThreadGroupsChangeAccumulator();
     protected long lastSnapshotMillis;
 
     protected int submitFrequency = 10;
@@ -168,9 +174,8 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
             String threadName = threadInfo.getThreadName();
             String threadGroupName = ThreadNameUtils.templatizeThreadName(threadName);
 
-            FlameGraphThreadGroupAccumulator threadGroupCounter = flameGraphAccumulator.getOrCreateThreadGroup(threadGroupName);
-
-            threadGroupCounter.accumulateResolvedStackTrace(resolvedEntry, elapsedMillis);
+            flameGraphThreadGroupsChangeAccumulator.addToThreadGroupStackEntry(
+                    threadGroupName, resolvedEntry, elapsedMillis);
         }
 
         // periodically send accumulated counters
@@ -183,7 +188,7 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
             long submitChangeTime = System.currentTimeMillis();
             // scan all modified entries since last time
             SubmitFlameGraphCounterChangeRequest submitChangeReq =
-                    SubmitFlameGraphCounterChangeRequest.createChangeRequest(executorId, flameGraphAccumulator);
+                    flameGraphThreadGroupsChangeAccumulator.createChangeRequest(executorId);
 
             // call executor -> driver to resolve all remaining StackTrace[] to entries
             SubmitFlameGraphCounterChangeResponse submitChangeResp;
@@ -192,7 +197,7 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
                 submitChangeResp = (SubmitFlameGraphCounterChangeResponse) respObject;
 
                 // update last modified time
-                SubmitFlameGraphCounterChangeResponse.onResponseUpdateLastTime(flameGraphAccumulator,
+                flameGraphThreadGroupsChangeAccumulator.onResponseUpdateLastTime(
                         submitChangeReq, submitChangeResp, submitChangeTime);
             } catch (Exception ex) {
                 log.warn("Failed to call driver to submit flamegraph counter! ... ignore, return");

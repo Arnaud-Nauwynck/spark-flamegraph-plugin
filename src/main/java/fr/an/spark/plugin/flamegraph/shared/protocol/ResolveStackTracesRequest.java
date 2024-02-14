@@ -1,7 +1,7 @@
-package fr.an.spark.plugin.flamegraph.shared;
+package fr.an.spark.plugin.flamegraph.shared.protocol;
 
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceElementKey;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.ArrayList;

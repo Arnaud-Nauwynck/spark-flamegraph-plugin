@@ -4,7 +4,11 @@ import fr.an.spark.plugin.flamegraph.driver.rest.FlameGraphDriverPluginFromServl
 import fr.an.spark.plugin.flamegraph.driver.rest.FlameGraphRestResource;
 import fr.an.spark.plugin.flamegraph.driver.rest.dto.FlameGraphNodeDTO;
 import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
-import fr.an.spark.plugin.flamegraph.shared.*;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesRequest;
+import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesResponse;
+import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeRequest;
+import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeResponse;
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntryRegistry;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.spark.SparkContext;
@@ -47,6 +51,7 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
     public FlameGraphDriverPlugin() {
     }
 
+    // implement DriverPlugin
     //---------------------------------------------------------------------------------------------
 
     @Override
@@ -143,6 +148,8 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
 
         return res;
     }
+
+    //---------------------------------------------------------------------------------------------
 
     public List<StackTraceEntryDTO> listStackRegistryEntries() {
         synchronized (lock) {

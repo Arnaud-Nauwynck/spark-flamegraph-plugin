@@ -1,6 +1,4 @@
-package fr.an.spark.plugin.flamegraph.shared;
-
-import lombok.val;
+package fr.an.spark.plugin.flamegraph.shared.utils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,7 +15,7 @@ public class LsUtils {
         return res;
     }
 
-    public static <TSrc,TDest> List<TDest> mapNonNull(Collection<TSrc> src, Function<TSrc,TDest> mapFunc) {
+    public static <TSrc,TDest> List<TDest> flatMapNonNull(Collection<TSrc> src, Function<TSrc,TDest> mapFunc) {
         List<TDest> res = new ArrayList<>(src.size());
         for(TSrc srcElt : src) {
             TDest optResElt = mapFunc.apply(srcElt);

@@ -1,13 +1,12 @@
-package fr.an.spark.plugin.flamegraph.shared;
+package fr.an.spark.plugin.flamegraph.shared.stacktrace;
 
 import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
-import lombok.RequiredArgsConstructor;
 
 import java.util.HashMap;
 import java.util.Map;
 
 // @RequiredArgsConstructor
-public class StackTraceEntry {
+public class StackTraceEntry implements Comparable<StackTraceEntry> {
 
     public final int id;
     public final StackTraceEntry parent;
@@ -21,6 +20,13 @@ public class StackTraceEntry {
         this.id = id;
         this.parent = parent;
         this.stackTraceElementKey = stackTraceElementKey;
+    }
+
+    //---------------------------------------------------------------------------------------------
+
+    @Override
+    public int compareTo(StackTraceEntry other) {
+        return Integer.compare(id, other.id);
     }
 
     public StackTraceEntry findChild(StackTraceElementKey childKey) {

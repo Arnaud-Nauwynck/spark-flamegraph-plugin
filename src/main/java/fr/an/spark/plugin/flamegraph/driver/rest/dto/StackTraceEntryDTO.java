@@ -1,7 +1,7 @@
 package fr.an.spark.plugin.flamegraph.driver.rest.dto;
 
-import fr.an.spark.plugin.flamegraph.shared.StackTraceElementKey;
-import fr.an.spark.plugin.flamegraph.shared.StackTraceEntry;
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceElementKey;
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntry;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package fr.an.spark.plugin.flamegraph.shared;
+package fr.an.spark.plugin.flamegraph.shared.utils;
 
 public class ThreadNameUtils {
 

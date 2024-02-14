@@ -1,4 +1,4 @@
-package fr.an.spark.plugin.flamegraph.shared;
+package fr.an.spark.plugin.flamegraph.shared.stacktrace;
 
 import lombok.Value;
 

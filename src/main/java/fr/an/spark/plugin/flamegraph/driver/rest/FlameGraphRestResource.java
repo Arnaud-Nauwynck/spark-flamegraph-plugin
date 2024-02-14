@@ -37,4 +37,5 @@ public class FlameGraphRestResource extends AbstractFlameGraphRestResource {
         val plugin = flameGraphDriverPlugin();
         return plugin.currFlameGraphDTO();
     }
+
 }
