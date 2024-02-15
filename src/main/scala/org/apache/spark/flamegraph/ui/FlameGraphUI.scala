@@ -4,18 +4,17 @@
 
 package org.apache.spark.flamegraph.ui
 
-import fr.an.spark.plugin.flamegraph.driver.FlameGraphDriverPlugin
+import fr.an.spark.plugin.flamegraph.driver.{FlameGraphDriverPlugin, FlameGraphService}
 import org.apache.spark.internal.Logging
 import org.apache.spark.ui.{SparkUI, SparkUITab, UIUtils, WebUIPage}
-import org.sparkproject.jetty.servlet.{ServletContextHandler, ServletHolder}
 
-import scala.xml.Node
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import scala.xml.Node
 
 /**
  *
  */
-class FlameGraphUI(val flameGraphDriverPlugin: FlameGraphDriverPlugin, sparkUI: SparkUI)
+class FlameGraphUI(val flameGraphService: FlameGraphService, sparkUI: SparkUI)
   extends SparkUITab(sparkUI, "FlameGraph") with Logging {
 
 
@@ -23,7 +22,7 @@ class FlameGraphUI(val flameGraphDriverPlugin: FlameGraphDriverPlugin, sparkUI: 
   def init(): Unit = {
 //    val flameGraphHttpServlet = new FlameGraphHttpServlet
 //    sparkUI.attachHandler("/flameGraph", flameGraphHttpServlet, "")
-    sparkUI.attachTab(new FlameGraphDriverTab(flameGraphDriverPlugin, sparkUI))
+    sparkUI.attachTab(new FlameGraphDriverTab(flameGraphService, sparkUI))
 
 
 //    val contextHandler = new ServletContextHandler
@@ -45,14 +44,14 @@ class FlameGraphHttpServlet extends HttpServlet with Logging {
 
 }
 
-class FlameGraphDriverTab(flameGraphDriverPlugin: FlameGraphDriverPlugin, sparkUI: SparkUI)
+class FlameGraphDriverTab(flameGraphService: FlameGraphService, sparkUI: SparkUI)
   extends SparkUITab(sparkUI, "FlameGraph") {
 
-    attachPage(new FlameGraphWebUIPage(flameGraphDriverPlugin, this));
+    attachPage(new FlameGraphWebUIPage(flameGraphService, this));
 
 }
 
-class FlameGraphWebUIPage(flameGraphDriverPlugin: FlameGraphDriverPlugin,
+class FlameGraphWebUIPage(flameGraphService: FlameGraphService,
                           parent: FlameGraphDriverTab)
   extends WebUIPage("") {
 

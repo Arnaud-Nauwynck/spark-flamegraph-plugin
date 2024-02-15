@@ -27,14 +27,14 @@ public class FlameGraphRestResource extends AbstractFlameGraphRestResource {
     @GET
     @Path("stackRegistryEntries")
     public List<StackTraceEntryDTO> stackRegistryEntries() {
-        val plugin = flameGraphDriverPlugin();
+        val plugin = flameGraphService();
         return plugin.listStackRegistryEntries();
     }
 
     @GET
     @Path("flameGraph")
     public FlameGraphNodeDTO flameGraph() {
-        val plugin = flameGraphDriverPlugin();
+        val plugin = flameGraphService();
         return plugin.currFlameGraphDTO();
     }
 

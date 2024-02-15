@@ -25,7 +25,7 @@ public class FlameGraphThreadGroupsChangeAccumulator {
 
     //---------------------------------------------------------------------------------------------
 
-    public void addToThreadGroupStackEntry(String threadGroupName, StackTraceEntry entry, long incrValue) {
+    public void addToThreadGroupStackEntry(String threadGroupName, StackTraceEntry entry, int incrValue) {
         FlameGraphChangeAccumulator threadGroupCounter = getOrCreateThreadGroup(threadGroupName);
         threadGroupCounter.addToStack(entry, incrValue);
     }

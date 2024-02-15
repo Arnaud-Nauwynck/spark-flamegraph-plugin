@@ -1,6 +1,6 @@
 package fr.an.spark.plugin.flamegraph.driver.rest;
 
-import fr.an.spark.plugin.flamegraph.driver.FlameGraphDriverPlugin;
+import fr.an.spark.plugin.flamegraph.driver.FlameGraphService;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -14,8 +14,8 @@ public abstract class AbstractFlameGraphRestResource {
     @Context
     protected HttpServletRequest httpRequest;
 
-    protected FlameGraphDriverPlugin flameGraphDriverPlugin() {
-        return FlameGraphDriverPluginFromServletContext.get(servletContext);
+    protected FlameGraphService flameGraphService() {
+        return FlameGraphServiceFromServletContext.get(servletContext);
     }
 
 }

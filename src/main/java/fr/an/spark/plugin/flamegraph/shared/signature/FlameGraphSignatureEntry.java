@@ -1,27 +1,27 @@
-package fr.an.spark.plugin.flamegraph.shared.stacktraceset;
+package fr.an.spark.plugin.flamegraph.shared.signature;
 
 import java.io.Serializable;
 
 /**
  * registered entity (StackTraceIdSetKey) in registry StackTraceIdSetRegistry
  */
-public class StackTraceIdSetEntry implements Serializable {
+public class FlameGraphSignatureEntry implements Serializable {
 
     public final int id;
-    public final StackTraceIdSetKey entrySet;
+    public final FlameGraphSignatureKey stackIdsKey;
 
     //---------------------------------------------------------------------------------------------
 
-    public StackTraceIdSetEntry(int id, StackTraceIdSetKey entrySet) {
+    public FlameGraphSignatureEntry(int id, FlameGraphSignatureKey stackIds) {
         this.id = id;
-        this.entrySet = entrySet;
+        this.stackIdsKey = stackIds;
     }
 
     //---------------------------------------------------------------------------------------------
 
     @Override
     public String toString() {
-        return "stackTraceEntrySet#" + id;
+        return "stackTraceSet#" + id;
     }
 
 }

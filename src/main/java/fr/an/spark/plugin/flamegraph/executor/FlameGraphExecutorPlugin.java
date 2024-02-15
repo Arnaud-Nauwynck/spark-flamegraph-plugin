@@ -149,7 +149,7 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
                 val threadInfo = threadInfos[i];
                 TmpResolvedThreadInfo resolvedThreadInfo = resolvedThreadInfos[i];
                 if (resolvedThreadInfo.partiallyResolvedStackTrace.remainElementKeys != null) {
-                    val partiallyResolved = stackTraceEntryRegistry.redoResolveStackTrace(resolvedThreadInfo.partiallyResolvedStackTrace, threadInfo);
+                    val partiallyResolved = stackTraceEntryRegistry.finishPartialResolveStackTrace(resolvedThreadInfo.partiallyResolvedStackTrace, threadInfo);
                     if (partiallyResolved.remainElementKeys != null) {
                         log.error("should not occur.. StackTrace not resolved after request-response for resolution");
                         return;
@@ -190,7 +190,7 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
             SubmitFlameGraphCounterChangeRequest submitChangeReq =
                     flameGraphThreadGroupsChangeAccumulator.createChangeRequest(executorId);
 
-            // call executor -> driver to resolve all remaining StackTrace[] to entries
+            // call executor -> driver to submit changed counters
             SubmitFlameGraphCounterChangeResponse submitChangeResp;
             try {
                 Object respObject = pluginContext.ask(submitChangeReq);

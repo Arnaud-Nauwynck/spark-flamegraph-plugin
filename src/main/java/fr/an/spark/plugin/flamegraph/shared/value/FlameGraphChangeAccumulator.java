@@ -3,17 +3,20 @@ package fr.an.spark.plugin.flamegraph.shared.value;
 import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeRequest.FlameGraphEntryAccumulatorChange;
 import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeRequest.FlameGraphThreadGroupAccumulatorChange;
 import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntry;
+import fr.an.spark.plugin.flamegraph.shared.signature.FlameGraphSignatureEntry;
+import fr.an.spark.plugin.flamegraph.shared.signature.FlameGraphSignatureKey;
+import fr.an.spark.plugin.flamegraph.shared.signature.FlameGraphSignatureRegistry;
 import fr.an.spark.plugin.flamegraph.shared.utils.LsUtils;
 import lombok.Getter;
+import lombok.val;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Getter
 public class FlameGraphChangeAccumulator {
+
     public final String name;
+
     protected final Map<Integer, FlameGraphEntryChangeAccumulator> entryAccumulators = new HashMap<>();
 
     //---------------------------------------------------------------------------------------------
@@ -22,8 +25,27 @@ public class FlameGraphChangeAccumulator {
         this.name = name;
     }
 
-    public void addToStack(StackTraceEntry entry, long millis) {
-        getOrCreateEntryAccumulator(entry).addTopLevelMillis(millis);
+    //---------------------------------------------------------------------------------------------
+
+    public ImmutableCompactIdFlameGraphValue toImmutableCompactValue(FlameGraphSignatureRegistry registry) {
+        SortedSet<Integer> entryIds = new TreeSet<Integer>(entryAccumulators.keySet());
+        FlameGraphSignatureKey setKey = FlameGraphSignatureKey.fromIds(entryIds);
+        FlameGraphSignatureEntry setEntry = registry.findOrRegister(setKey);
+        int entrySetLength = setKey.length();
+        int[] entryValues = new int[entrySetLength];
+        for(int i = 0; i < entrySetLength; i++) {
+            int stackEntryId = setKey.at(i);
+            val acc = entryAccumulators.get(stackEntryId);
+            if (acc == null) {
+                continue; // should not occur
+            }
+            entryValues[i] = acc.value;
+        }
+        return new ImmutableCompactIdFlameGraphValue(setEntry.id, entryValues);
+    }
+
+    public void addToStack(StackTraceEntry entry, int millis) {
+        getOrCreateEntryAccumulator(entry).addValue(millis);
     }
 
     private FlameGraphEntryChangeAccumulator getOrCreateEntryAccumulator(StackTraceEntry entry) {
@@ -31,26 +53,25 @@ public class FlameGraphChangeAccumulator {
     }
 
     public FlameGraphThreadGroupAccumulatorChange createAccChange() {
-        List<FlameGraphEntryAccumulatorChange> entryChanges = LsUtils.flatMapNonNull(entryAccumulators.values(),
-                x -> x.toEntryChangeOrNull());
-        if (entryChanges.isEmpty()) {
+        val changes = LsUtils.flatMapNonNull(entryAccumulators.values(), x -> x.toEntryChangeOrNull());
+        if (changes.isEmpty()) {
             return null;
         }
-        return new FlameGraphThreadGroupAccumulatorChange(name, entryChanges);
+        return new FlameGraphThreadGroupAccumulatorChange(name, changes);
     }
 
     public void onResponseUpdateLastTime(FlameGraphThreadGroupAccumulatorChange change,
                                          long syncTime) {
-        List<FlameGraphEntryAccumulatorChange> childChanges = change.changes;
+        val childChanges = change.changes;
         if (childChanges == null) {
             return;
         }
         for (FlameGraphEntryAccumulatorChange childChange : childChanges) {
-            FlameGraphEntryChangeAccumulator entryAcc = entryAccumulators.get(childChange.entryId);
-            if (entryAcc == null) {
+            val childAcc = entryAccumulators.get(childChange.entryId);
+            if (childAcc == null) {
                 continue; // should not occur, but ok
             }
-            entryAcc.onResponseUpdateLastTime(syncTime, childChange.valueIncr);
+            childAcc.onResponseUpdateLastTime(syncTime, childChange.valueIncr);
         }
     }
 
@@ -59,33 +80,33 @@ public class FlameGraphChangeAccumulator {
 
     public static class FlameGraphEntryChangeAccumulator {
         public final StackTraceEntry entry;
-        protected long topLevelSumMillis;
+        protected int value;
 
         @Getter
-        protected long lastUpdatedTopLevelTime;
+        protected long lastUpdatedTime;
         @Getter
-        protected long lastUpdatedTopLevelSumMillis;
+        protected long lastUpdatedValue;
 
         public FlameGraphEntryChangeAccumulator(StackTraceEntry entry) {
             this.entry = Objects.requireNonNull(entry);
         }
 
-        public void addTopLevelMillis(long millis) {
-            this.topLevelSumMillis += millis;
+        public void addValue(int millis) {
+            this.value += millis;
         }
 
-        public void onResponseUpdateLastTime(long time, long sumMillis) {
-            if (this.lastUpdatedTopLevelSumMillis != sumMillis) {
-                this.lastUpdatedTopLevelTime = time;
-                this.lastUpdatedTopLevelSumMillis = sumMillis;
+        public void onResponseUpdateLastTime(long lastTime, int lastValue) {
+            if (this.lastUpdatedValue != lastValue) {
+                this.lastUpdatedTime = lastTime;
+                this.lastUpdatedValue = lastValue;
             }
         }
 
         public FlameGraphEntryAccumulatorChange toEntryChangeOrNull() {
-            if (topLevelSumMillis == lastUpdatedTopLevelSumMillis) {
+            if (value == lastUpdatedValue) {
                 return null;
             }
-            return new FlameGraphEntryAccumulatorChange(entry.id, topLevelSumMillis);
+            return new FlameGraphEntryAccumulatorChange(entry.id, value);
         }
 
     }

@@ -1,4 +1,4 @@
-package fr.an.spark.plugin.flamegraph.shared.stacktraceset;
+package fr.an.spark.plugin.flamegraph.shared.signature;
 
 import lombok.val;
 
@@ -8,46 +8,51 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class StackTraceIdSetRegistry {
+/**
+ * Registry for mapping a Set of StackTraceEntries as a compact id
+ *
+ * used to stored in a compact way a FlameGraph as { int setId; int[] values; }
+ */
+public class FlameGraphSignatureRegistry {
 
     private final Object lock = new Object();
     @GuardedBy("lock")
-    private final Map<StackTraceIdSetKey, StackTraceIdSetEntry> byKey = new HashMap<>();
+    private final Map<FlameGraphSignatureKey, FlameGraphSignatureEntry> byKey = new HashMap<>();
 
     @GuardedBy("lock")
-    private final Map<Integer, StackTraceIdSetEntry> byId = new HashMap<>();
+    private final Map<Integer, FlameGraphSignatureEntry> byId = new HashMap<>();
 
     @GuardedBy("lock")
     private int idGenerator = 1;
 
     //---------------------------------------------------------------------------------------------
 
-    public StackTraceIdSetRegistry() {
+    public FlameGraphSignatureRegistry() {
     }
 
     //---------------------------------------------------------------------------------------------
 
-    public StackTraceIdSetEntry findOrRegister(StackTraceIdSet set) {
+    public FlameGraphSignatureEntry findOrRegister(FlameGraphSignatureBuilder set) {
         return findOrRegister(set.toKey());
     }
 
-    public StackTraceIdSetEntry findOrRegister(StackTraceIdSetKey key) {
+    public FlameGraphSignatureEntry findOrRegister(FlameGraphSignatureKey key) {
         synchronized(lock) {
             return byKey.computeIfAbsent(key, k -> {
-                val res = new StackTraceIdSetEntry(idGenerator++, k);
+                val res = new FlameGraphSignatureEntry(idGenerator++, k);
                 byId.put(res.id, res);
                 return res;
             });
         }
     }
 
-    public List<StackTraceIdSetEntry> getRegisteredList() {
+    public List<FlameGraphSignatureEntry> getRegisteredList() {
         synchronized(lock) {
             return new ArrayList<>(byKey.values());
         }
     }
 
-    public StackTraceIdSetEntry getById(int id) {
+    public FlameGraphSignatureEntry getById(int id) {
         synchronized(lock) {
             val res = byId.get(id);
             if (res == null) {

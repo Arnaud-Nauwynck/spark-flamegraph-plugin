@@ -24,7 +24,7 @@ public class SubmitFlameGraphCounterChangeRequest implements Serializable {
     @RequiredArgsConstructor
     public static class FlameGraphEntryAccumulatorChange implements Serializable {
         public final int entryId;
-        public final long valueIncr;
+        public final int valueIncr;
     }
 
 }
