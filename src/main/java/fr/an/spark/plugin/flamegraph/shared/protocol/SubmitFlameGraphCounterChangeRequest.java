@@ -13,6 +13,7 @@ import java.util.List;
 public class SubmitFlameGraphCounterChangeRequest implements Serializable {
 
     public final String executorId;
+    public final long syncTime;
     public final List<FlameGraphThreadGroupAccumulatorChange> changes;
 
     @RequiredArgsConstructor

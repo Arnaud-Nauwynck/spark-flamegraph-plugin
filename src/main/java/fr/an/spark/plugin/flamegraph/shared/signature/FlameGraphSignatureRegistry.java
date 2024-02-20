@@ -1,5 +1,6 @@
 package fr.an.spark.plugin.flamegraph.shared.signature;
 
+import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntryRegistry;
 import lombok.val;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -15,6 +16,8 @@ import java.util.Map;
  */
 public class FlameGraphSignatureRegistry {
 
+    public final StackTraceEntryRegistry stackTraceEntryRegistry;
+
     private final Object lock = new Object();
     @GuardedBy("lock")
     private final Map<FlameGraphSignatureKey, FlameGraphSignatureEntry> byKey = new HashMap<>();
@@ -27,7 +30,8 @@ public class FlameGraphSignatureRegistry {
 
     //---------------------------------------------------------------------------------------------
 
-    public FlameGraphSignatureRegistry() {
+    public FlameGraphSignatureRegistry(StackTraceEntryRegistry stackTraceEntryRegistry) {
+        this.stackTraceEntryRegistry = stackTraceEntryRegistry;
     }
 
     //---------------------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 package fr.an.spark.plugin.flamegraph.shared;
 
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 
 import java.util.Objects;
 
@@ -61,8 +62,8 @@ public class TimeScaleSeries<T> {
 
     @RequiredArgsConstructor
     public static class AccTimeRange<T> {
-        public final long startTime;
-        public final long endTime;
+        public final long fromTime;
+        public final long toTime;
         public final T accValue;
 
     }
@@ -104,7 +105,29 @@ public class TimeScaleSeries<T> {
 
     private AccTimeRange<T> sumTimeRange(AccTimeRange<T> first, AccTimeRange<T> second) {
         T sumValue = ops.sum(first.accValue, second.accValue);
-        return new AccTimeRange<T>(first.startTime, second.endTime, sumValue);
+        return new AccTimeRange<T>(first.fromTime, second.toTime, sumValue);
+    }
+
+    public <TAcc> TAcc extractTimeRange(long fromTime, long toTime, SumScaleValueAccSupport<T,TAcc> accSupport) {
+        TAcc res = accSupport.createAcc();
+        for(int i = 0; i < scaleEntries.length; i++) {
+            val scaleEntry = scaleEntries[i];
+
+            final int scaleEntryLength = scaleEntry.length;
+            final int scaleLastIndex = scaleEntry.currentLastIndexModulo;
+            for(int j = scaleEntry.currentFirstIndexModulo; j < scaleLastIndex; j = (j+1)%scaleEntryLength) {
+                AccTimeRange<T> accTimeRange = scaleEntry.accTimeRanges[j];
+                accSupport.addTimeRangeIntersectTo(res, fromTime, toTime,
+                        accTimeRange.accValue, accTimeRange.fromTime, accTimeRange.toTime);
+                // TOADD optim for loop?
+            } // for j
+        } // for i
+
+        if (remainScaleValue != null) {
+            accSupport.addTimeRangeIntersectTo(res, fromTime, toTime,
+                    remainScaleValue.accValue, remainScaleValue.fromTime, remainScaleValue.toTime);
+        }
+        return res;
     }
 
 }

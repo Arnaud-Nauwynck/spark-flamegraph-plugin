@@ -44,4 +44,12 @@ public class StackTraceElementKey implements Serializable {
         return new StackTraceElementKey(ste.getClassName(), ste.getMethodName(), ste.getFileName(), ste.getLineNumber(), lockThreadState);
     }
 
+    public String toName() {
+        String res = className + "." + methodName;
+        if (fileName != null) {
+            res += "(" + fileName + ":" + lineNumber + ")";
+        }
+        return res;
+    }
+
 }

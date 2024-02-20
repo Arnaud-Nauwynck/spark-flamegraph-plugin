@@ -4,10 +4,8 @@ import fr.an.spark.plugin.flamegraph.driver.rest.FlameGraphRestResource;
 import fr.an.spark.plugin.flamegraph.driver.rest.FlameGraphServiceFromServletContext;
 import fr.an.spark.plugin.flamegraph.driver.rest.dto.FlameGraphNodeDTO;
 import fr.an.spark.plugin.flamegraph.driver.rest.dto.StackTraceEntryDTO;
-import fr.an.spark.plugin.flamegraph.shared.FlameGraphThreadGroupsChangeAccumulator;
 import fr.an.spark.plugin.flamegraph.shared.protocol.ResolveStackTracesRequest;
 import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeRequest;
-import fr.an.spark.plugin.flamegraph.shared.protocol.SubmitFlameGraphCounterChangeResponse;
 import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntry;
 import fr.an.spark.plugin.flamegraph.shared.stacktrace.StackTraceEntryRegistry;
 import fr.an.spark.plugin.flamegraph.shared.utils.ThreadNameUtils;
@@ -51,17 +49,9 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
     protected ScheduledExecutorService scheduledExecutorService;
     protected int periodicThreadDumpMillis;
     protected ScheduledFuture<?> periodicScheduledFuture;
-
-    protected final StackTraceEntryRegistry stackTraceEntryRegistry = new StackTraceEntryRegistry();
-
-    // TODO move to flameGraphService
-    @Getter
-    protected FlameGraphThreadGroupsChangeAccumulator flameGraphThreadGroupsChangeAccumulator = new FlameGraphThreadGroupsChangeAccumulator();
-
     protected long lastSnapshotMillis;
 
-    protected int submitFrequency = 10;
-    protected int submitIndexModulo = submitFrequency;
+    protected final StackTraceEntryRegistry stackTraceEntryRegistry = new StackTraceEntryRegistry();
 
     //---------------------------------------------------------------------------------------------
 
@@ -75,6 +65,7 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
     public Map<String, String> init(SparkContext sc, PluginContext pluginContext) {
         Map<String, String> executorInitValues = new HashMap<>();
         log.info("FlameGraph plugin init");
+
 
         SparkUI ui = sc.ui().getOrElse(null);
         if (ui != null) {
@@ -98,6 +89,7 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
                     this::onPeriodicTakeThreadDump, periodicThreadDumpMillis, periodicThreadDumpMillis, TimeUnit.MILLISECONDS);
         }
 
+        this.flameGraphService.start(sc);
         return executorInitValues;
     }
 
@@ -136,6 +128,7 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
     @Override
     public void shutdown() {
         log.info("FlameGraph plugin shutdown");
+        this.flameGraphService.stop();
     }
 
     @Override
@@ -146,13 +139,12 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
     @Override
     public Object receive(Object message) throws Exception {
         if (message instanceof ResolveStackTracesRequest) {
-            ResolveStackTracesRequest req = (ResolveStackTracesRequest) message;
+            val req = (ResolveStackTracesRequest) message;
             val resp = flameGraphService.handleResolveStackTraceRequest(req);
             return resp;
         } else if (message instanceof SubmitFlameGraphCounterChangeRequest) {
-            SubmitFlameGraphCounterChangeRequest req = (SubmitFlameGraphCounterChangeRequest) message;
-            // TODO
-            val resp = new SubmitFlameGraphCounterChangeResponse();
+            val req = (SubmitFlameGraphCounterChangeRequest) message;
+            val resp = flameGraphService.applyExecutorFlameGraphCounterChange(req);
             return resp;
         } else {
             // unrecognized request ?
@@ -202,32 +194,7 @@ public class FlameGraphDriverPlugin implements DriverPlugin {
             String threadName = threadInfo.getThreadName();
             String threadGroupName = ThreadNameUtils.templatizeThreadName(threadName);
 
-            flameGraphThreadGroupsChangeAccumulator.addToThreadGroupStackEntry(
-                    threadGroupName, resolvedEntry, elapsedMillis);
-        }
-
-        // periodically send accumulated counters
-        submitIndexModulo--;
-        if (submitIndexModulo <= 0) {
-            submitIndexModulo = submitFrequency;
-
-            String executorId = "driver";
-
-            long submitChangeTime = System.currentTimeMillis();
-            // scan all modified entries since last time
-            SubmitFlameGraphCounterChangeRequest submitChangeReq =
-                    flameGraphThreadGroupsChangeAccumulator.createChangeRequest(executorId);
-
-            SubmitFlameGraphCounterChangeResponse submitChangeResp;
-            try {
-                submitChangeResp = flameGraphService.submitDriverFlameGraphCounterChange(submitChangeReq);
-
-                // update last modified time
-                flameGraphThreadGroupsChangeAccumulator.onResponseUpdateLastTime(
-                        submitChangeReq, submitChangeResp, submitChangeTime);
-            } catch (Exception ex) {
-                log.warn("Failed to call driver to submit flamegraph counter! ... ignore, return");
-            }
+            flameGraphService.applyDriverFlameGraphCounterAdd(threadGroupName, resolvedEntry, elapsedMillis);
         }
     }
 

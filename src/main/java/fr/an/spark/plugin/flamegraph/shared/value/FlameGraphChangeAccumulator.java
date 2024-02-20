@@ -27,7 +27,7 @@ public class FlameGraphChangeAccumulator {
 
     //---------------------------------------------------------------------------------------------
 
-    public ImmutableCompactIdFlameGraphValue toImmutableCompactValue(FlameGraphSignatureRegistry registry) {
+    public CompactFlameGraphValue toImmutableCompactValue(FlameGraphSignatureRegistry registry) {
         SortedSet<Integer> entryIds = new TreeSet<Integer>(entryAccumulators.keySet());
         FlameGraphSignatureKey setKey = FlameGraphSignatureKey.fromIds(entryIds);
         FlameGraphSignatureEntry setEntry = registry.findOrRegister(setKey);
@@ -41,7 +41,7 @@ public class FlameGraphChangeAccumulator {
             }
             entryValues[i] = acc.value;
         }
-        return new ImmutableCompactIdFlameGraphValue(setEntry.id, entryValues);
+        return new CompactFlameGraphValue(setEntry.id, entryValues);
     }
 
     public void addToStack(StackTraceEntry entry, int millis) {
@@ -60,8 +60,8 @@ public class FlameGraphChangeAccumulator {
         return new FlameGraphThreadGroupAccumulatorChange(name, changes);
     }
 
-    public void onResponseUpdateLastTime(FlameGraphThreadGroupAccumulatorChange change,
-                                         long syncTime) {
+    public void applyChange(FlameGraphThreadGroupAccumulatorChange change,
+                            long syncTime) {
         val childChanges = change.changes;
         if (childChanges == null) {
             return;
@@ -71,7 +71,7 @@ public class FlameGraphChangeAccumulator {
             if (childAcc == null) {
                 continue; // should not occur, but ok
             }
-            childAcc.onResponseUpdateLastTime(syncTime, childChange.valueIncr);
+            childAcc.applyChange(syncTime, childChange.valueIncr);
         }
     }
 
@@ -95,7 +95,7 @@ public class FlameGraphChangeAccumulator {
             this.value += millis;
         }
 
-        public void onResponseUpdateLastTime(long lastTime, int lastValue) {
+        public void applyChange(long lastTime, int lastValue) {
             if (this.lastUpdatedValue != lastValue) {
                 this.lastUpdatedTime = lastTime;
                 this.lastUpdatedValue = lastValue;

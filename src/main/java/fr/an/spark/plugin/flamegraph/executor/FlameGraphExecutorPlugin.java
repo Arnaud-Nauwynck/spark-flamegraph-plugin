@@ -160,8 +160,8 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
         }
 
         // process (fully) resolved StackTraces, increment counters
-        long now = System.currentTimeMillis();
-        long elapsedMillis = now - lastSnapshotMillis;
+        val now = System.currentTimeMillis();
+        val elapsedMillis = (int) (now - lastSnapshotMillis);
         this.lastSnapshotMillis = now;
 
         for(int i = 0; i < threadCount; i++) {
@@ -196,9 +196,8 @@ public class FlameGraphExecutorPlugin implements ExecutorPlugin {
                 Object respObject = pluginContext.ask(submitChangeReq);
                 submitChangeResp = (SubmitFlameGraphCounterChangeResponse) respObject;
 
-                // update last modified time
-                flameGraphThreadGroupsChangeAccumulator.onResponseUpdateLastTime(
-                        submitChangeReq, submitChangeResp, submitChangeTime);
+                // ok, updated remote(driver) coutners, so update local last modified time
+                flameGraphThreadGroupsChangeAccumulator.applyChangeRequest(submitChangeReq);
             } catch (Exception ex) {
                 log.warn("Failed to call driver to submit flamegraph counter! ... ignore, return");
             }
